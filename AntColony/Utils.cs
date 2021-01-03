@@ -35,7 +35,7 @@ namespace AntColony
         /// OTHER
         public const int NODE_COUNT = 20;
 
-        public const int EDGE_PER_NODE_COUNT = 4;
+        public const int EDGE_PER_NODE_COUNT = 3;
         public const int ANT_COUNT = 5;
         public const int FOOD_RATIO = 50;
         public const int DELAY = 1000;

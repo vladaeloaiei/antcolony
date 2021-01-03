@@ -68,40 +68,25 @@ namespace AntColony
 
         private void generateEdges()
         {
+            //First, connect all nodes with a complete "circle"
+            //Each node will have exactly 2 edges (one with the previous node and one with the next node)
+            for (var i = 0; i < Graph.Keys.Count; ++i)
+            {
+                var nodeA = Graph.Keys.ElementAt(i);
+                var nodeB = ((i + 1) < Graph.Keys.Count) ? Graph.Keys.ElementAt(i + 1) : Graph.Keys.ElementAt(0);
+
+                Graph[nodeA].Add(new Edge(nodeA, nodeB));
+                Graph[nodeB].Add(new Edge(nodeB, nodeA));
+            }
+
+            //Now, generate new edges for each node with a random one
             foreach (var node in Graph.Keys)
             {
-                for (var i = 0; i < Utils.EDGE_PER_NODE_COUNT; ++i)
+                for (var i = 0; i < (Utils.EDGE_PER_NODE_COUNT - 2); ++i)
                 {
-                    Graph[node].Add(generateNewEdge(node));
+                    Graph[node].Add(new Edge(node, Graph.Keys.ElementAt(Utils.RandNoGen.Next(Utils.NODE_COUNT))));
                 }
             }
-        }
-
-        private Edge generateNewEdge(Node a)
-        {
-            Edge edge;
-
-            do
-            {
-                var b = Graph.Keys.ElementAt(Utils.RandNoGen.Next(Utils.NODE_COUNT));
-
-                edge = new Edge(a, b);
-            } while (!isEdgeOk(edge));
-
-            return edge;
-        }
-
-        private bool isEdgeOk(Edge edge)
-        {
-            foreach (var existingEdge in Graph[edge.NodeA])
-            {
-                if (edge.NodeB.Equals(existingEdge.NodeB))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
     }
 }
