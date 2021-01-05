@@ -43,12 +43,17 @@ namespace AntColony
             {
                 foreach (var node in _ownerAgent.World.Graph.Keys)
                 {
-                    node.draw(g);
+                    node.Draw(g);
 
                     foreach (var edge in _ownerAgent.World.Graph[node])
                     {
-                        edge.draw(g);
+                        edge.Draw(g);
                     }
+                }
+
+                foreach (var ant in _ownerAgent.World.Ants.Values)
+                {
+                    ant.Draw(g);
                 }
             }
 

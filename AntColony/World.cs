@@ -2,35 +2,54 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Windows.Forms;
-
 
 namespace AntColony
 {
     public class World
     {
-        public Dictionary<Node, List<Edge>> Graph { get; set; }
+        public Dictionary<Node, IList<Edge>> Graph { get; set; }
         public AntHill AntHill { get; set; }
+        public IDictionary<string, Ant> Ants { get; set; }
 
         public World()
         {
-            //Place the anthill in the center 
-            AntHill = new AntHill(new Point(Utils.WORLD_WIDTH / 2, Utils.WORLD_HEIGHT / 2));
-            Graph = new Dictionary<Node, List<Edge>>();
-            Graph.Add(AntHill, new List<Edge>());
-            generateNodes();
-            generateEdges();
+            Ants = new Dictionary<string, Ant>();
+
+            AntHill = new AntHill
+            {
+                Position = new Point(Utils.WORLD_WIDTH / 2, Utils.WORLD_HEIGHT / 2)
+            };
+
+            Graph = new Dictionary<Node, IList<Edge>>
+            {
+                {AntHill, new List<Edge>()}
+            };
+
+            GenerateNodes();
+            GenerateEdges();
         }
 
-        private void generateNodes()
+        public void AddOrUpdateAnt(string antName, Ant ant)
         {
-            for (var i = 0; i < Utils.NODE_COUNT; ++i)
+            if (!Ants.ContainsKey(antName))
             {
-                Graph.Add(generateNewNode(), new List<Edge>());
+                Ants.Add(antName, ant);
+            }
+            else
+            {
+                Ants[antName] = ant;
             }
         }
 
-        private Node generateNewNode()
+        private void GenerateNodes()
+        {
+            for (var i = 0; i < Utils.NODE_COUNT; ++i)
+            {
+                Graph.Add(GenerateNewNode(), new List<Edge>());
+            }
+        }
+
+        private Node GenerateNewNode()
         {
             Node node;
 
@@ -38,19 +57,20 @@ namespace AntColony
             {
                 var x = Utils.RandNoGen.Next(Utils.WORLD_WIDTH);
                 var y = Utils.RandNoGen.Next(Utils.WORLD_HEIGHT);
-                node = new Node(new Point(x, y), false);
-            } while (!isNodeOk(node));
+                node = new Node { Position = new Point(x, y) };
+            } while (!IsNodeOk(node));
 
-            //Set food
             node.HasFood = Utils.RandomBool(Utils.FOOD_RATIO);
+            node.FoodQuantity = node.HasFood ? Utils.FOOD_QUANTITY : 0;
+
             return node;
         }
 
-        private bool isNodeOk(Node node)
+        private bool IsNodeOk(Node node)
         {
             foreach (var existingNode in Graph.Keys)
             {
-                if (areClose(node.Position, existingNode.Position))
+                if (AreClose(node.Position, existingNode.Position))
                 {
                     return false;
                 }
@@ -59,14 +79,14 @@ namespace AntColony
             return true;
         }
 
-        private bool areClose(Point a, Point b)
+        private bool AreClose(Point a, Point b)
         {
             return Math.Abs(a.X - b.X) < Utils.MIN_DISTANCE_BETWEEN_NODES &&
                    Math.Abs(a.Y - b.Y) < Utils.MIN_DISTANCE_BETWEEN_NODES;
         }
 
 
-        private void generateEdges()
+        private void GenerateEdges()
         {
             //First, connect all nodes with a complete "circle"
             //Each node will have exactly 2 edges (one with the previous node and one with the next node)

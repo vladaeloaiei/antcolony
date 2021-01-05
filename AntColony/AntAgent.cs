@@ -1,143 +1,147 @@
 ﻿using ActressMas;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace AntColony
 {
-    public class AntAgent : TurnBasedAgent, DrawableEntity
+    public class AntAgent : TurnBasedAgent
     {
-        private readonly World _world;
-        private State _state;
-        private Stack<Node> _route;
-        private Point _currentPosition;
-        private string _resourceCarried;
+        private Ant _ant;
+        private readonly Stack<Node> _route;
 
-        public Edge Edge { get; set; }
-
-        private enum State
+        public AntAgent(string name)
         {
-            Free,
-            Carrying
-        };
-
-        public AntAgent(World world, string name)
-        {
-            _world = world;
-            _route = new Stack<Node>();
-            _route.Push(world.AntHill);
-            _currentPosition = world.AntHill.Position;
             Name = name;
+
+            _route = new Stack<Node>();
         }
 
         public override void Setup()
         {
-            //TODO :this is dummy code. we should add features here
             Console.WriteLine(@"Starting " + Name);
 
-            _state = State.Free;
-
-            while (IsAtBase())
+            var startNode = new Node
             {
-                _currentPosition.X = Utils.RandNoGen.Next(Utils.NODE_COUNT);
-                _currentPosition.Y = Utils.RandNoGen.Next(Utils.NODE_COUNT);
-            }
+                Position = new Point
+                {
+                    X = Utils.WORLD_WIDTH / 2,
+                    Y = Utils.WORLD_HEIGHT / 2
+                },
+                HasFood = false
+            };
 
-            Send("world", Utils.Str("position", _currentPosition.X, _currentPosition.Y));
-        }
+            _route.Push(new Node
+            {
+                Position = new Point
+                {
+                    X = Utils.WORLD_WIDTH / 2,
+                    Y = Utils.WORLD_HEIGHT / 2
+                }
+            });
+            _ant = new Ant(startNode);
 
-        private bool IsAtBase()
-        {
-            //TODO :this is dummy code. we should add features here
-            return (_currentPosition.Y == Utils.NODE_COUNT / 2 &&
-                    _currentPosition.Y == Utils.NODE_COUNT / 2); // the position of the base
+            Send("worldAgent", Utils.Serialize("position", startNode.Position));
         }
 
         public override void Act(Queue<Message> messages)
         {
-            //TODO :this is dummy code. we should add features here
             while (messages.Count > 0)
             {
                 var message = messages.Dequeue();
 
-                Console.WriteLine(@"    [{1} -> {0}]: {2}", this.Name, message.Sender, message.Content);
+                Console.WriteLine($"{"",7}[{message.Sender} -> {this.Name}]: {message.Content}");
 
-                Utils.ParseMessage(message.Content, out var action, out List<string> parameters);
+                Utils.ParseMessage(message.Content, out var action, out string parameters);
 
                 switch (action)
                 {
-                    case "block":
-                        // R1. If you detect an obstacle, then change direction
-                        MoveRandomly();
-                        Send("world", Utils.Str("change", _currentPosition.Y, _currentPosition.Y));
-                        break;
-                    case "move" when _state == State.Carrying && IsAtBase():
-                        // R2. If carrying samples and at the base, then unload samples
-                        _state = State.Free;
-                        Send("world", Utils.Str("unload", _resourceCarried));
-                        break;
-                    case "move" when _state == State.Carrying && !IsAtBase():
-                        // R3. If carrying samples and not at the base, then travel up gradient
-                        MoveToBase();
-                        Send("world", Utils.Str("carry", _currentPosition.Y, _currentPosition.Y));
-                        break;
-                    case "rock":
-                        // R4. If you detect a sample, then pick sample up
-                        _state = State.Carrying;
-                        _resourceCarried = parameters[0];
-                        Send("world", Utils.Str("pick-up", _resourceCarried));
-                        break;
                     case "move":
-                        // R5. If (true), then move randomly
-                        MoveRandomly();
-                        Send("world", Utils.Str("change", _currentPosition.Y, _currentPosition.Y));
+                        ChangePosition(message.Sender, parameters);
+                        break;
+                    case "pick-up":
+                        PickUpFood(message.Sender);
+                        break;
+                    case "return":
+                        MoveToBase(message.Sender);
                         break;
                 }
             }
         }
 
-        private void MoveRandomly()
+        private void ChangePosition(string sender, string edges)
         {
-            //TODO :this is dummy code. we should add features here
-            var d = Utils.RandNoGen.Next(4);
-            switch (d)
+            var nextEdges = JsonConvert.DeserializeObject<IList<Edge>>(edges);
+
+            var maxWeight = nextEdges.Where(edge => !_route.Peek().Equals(edge.NodeB))
+                .Select(edge => edge.Weight)
+                .Max();
+
+            //TODO Refactor this
+            var nextNode = nextEdges.Select(edge => edge.Weight).Distinct().Count() == 1
+                ? nextEdges[Utils.RandNoGen.Next(Utils.EDGE_PER_NODE_COUNT)].NodeB
+                : nextEdges.First(edge => edge.Weight.Equals(maxWeight))?.NodeB;
+
+            //var nextNode = maxWeight != 0
+            //    ? nextEdges.First(edge => edge.Weight.Equals(maxWeight))?.NodeB
+            //    : _route.Pop();
+
+            if (nextNode != null)
             {
-                case 0:
-                    if (_currentPosition.Y > 0) _currentPosition.Y--;
-                    break;
-                case 1:
-                    if (_currentPosition.Y < Utils.NODE_COUNT - 1) _currentPosition.Y++;
-                    break;
-                case 2:
-                    if (_currentPosition.Y > 0) _currentPosition.Y--;
-                    break;
-                case 3:
-                    if (_currentPosition.Y < Utils.NODE_COUNT - 1) _currentPosition.Y++;
-                    break;
+                _ant.CurrentNode.Position = nextNode.Position;
+                _route.Push(nextNode);
+
+                Send(sender, Utils.Serialize("position", nextNode.Position));
             }
         }
 
-        private void MoveToBase()
+        private void PickUpFood(string sender)
         {
-            //TODO :this is dummy code. we should add features here
-            var dx = _currentPosition.Y - Utils.NODE_COUNT / 2;
-            var dy = _currentPosition.Y - Utils.NODE_COUNT / 2;
+            _ant.State = Ant.AntState.Carrying;
+            Send(sender, Utils.Serialize("pick-up", _ant.CurrentNode.Position));
 
-            if (Math.Abs(dx) > Math.Abs(dy))
-                _currentPosition.Y -= Math.Sign(dx);
+        }
+
+        private void MoveToBase(string sender)
+        {
+            if (Utils.VERSION == 1)
+            {
+                if (!IsAtBase())
+                {
+                    Send(sender, Utils.Serialize("carry", new Edge(
+                        new Node { Position = _ant.CurrentNode.Position },
+                        new Node { Position = _route.Peek().Position })
+                ));
+
+                    if (_route.Peek().Position.X == Utils.WORLD_WIDTH / 2 &&
+                        _route.Peek().Position.Y == Utils.WORLD_HEIGHT / 2)
+                    {
+                        _ant.CurrentNode.Position = _route.Peek().Position;
+                    }
+                    else
+                    {
+                        _ant.CurrentNode.Position = _route.Pop().Position;
+                    }
+                }
+                else
+                {
+                    _ant.State = Ant.AntState.Free;
+
+                    Send(sender, Utils.Serialize("unload", _ant.CurrentNode.Position));
+                }
+            }
             else
-                _currentPosition.Y -= Math.Sign(dy);
+            {
+                //TODO version 2 logic
+            }
         }
 
-
-        public void draw(Graphics g)
+        private bool IsAtBase()
         {
-            g.FillEllipse(getBrush(), _currentPosition.X, _currentPosition.Y, Utils.ANT_WIDTH, Utils.ANT_HEIGHT);
-        }
-
-        protected Brush getBrush()
-        {
-            return (_state == State.Carrying) ? Utils.FOOD_ANT_BRUSH : Utils.EMPTY_ANT_BRUSH;
+            return (_ant.CurrentNode.Position.Y == Utils.WORLD_WIDTH / 2 &&
+                    _ant.CurrentNode.Position.Y == Utils.WORLD_HEIGHT / 2);
         }
     }
 }

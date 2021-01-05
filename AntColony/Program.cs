@@ -8,13 +8,13 @@ namespace AntColony
         {
             var env = new TurnBasedEnvironment(0, Utils.DELAY);
             var world = new World();
-            var worldAgent = new WorldAgent(world, "world");
+            var worldAgent = new WorldAgent(world, "worldAgent");
 
             env.Add(worldAgent);
 
-            // for (var i = 1; i <= Utils.ANT_COUNT; i++)
+            for (var i = 1; i <= Utils.ANT_COUNT; i++)
             {
-                var explorerAgent = new AntAgent(world, "ant" + 1);
+                var explorerAgent = new AntAgent("antAgent" + i);
                 env.Add(explorerAgent);
             }
 
