@@ -106,6 +106,14 @@ namespace AntColony
                 }
 
                 _formGui.UpdateWorldGui();
+
+                if (_totalFood == World.TotalFood)
+                {
+                    Console.WriteLine($"[{this.Name}]: STOP");
+                    this.Stop();
+                    _stopwatch.Stop();
+                    Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
+                }
             }
         }
 
@@ -154,10 +162,6 @@ namespace AntColony
             var nodeEdges = World.Graph[currentWorldNode];
 
             currentWorldNode.DecreaseFoodQuantity();
-            if (node.Position.X != Utils.WORLD_WIDTH && node.Position.Y != Utils.WORLD_HEIGHT)
-            {
-                _totalFood++;
-            }
 
             World.Graph.Remove(currentWorldNode);
             World.Graph.Add(currentWorldNode, nodeEdges);
@@ -195,34 +199,29 @@ namespace AntColony
 
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
 
-            if (_totalFood == World.TotalFood)
+            if (node.Position.X == Utils.WORLD_WIDTH / 2 && node.Position.Y == Utils.WORLD_HEIGHT / 2)
             {
-                Console.WriteLine($"[{this.Name}]: STOP");
-                this.Stop();
-                _stopwatch.Stop();
-                Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
+                _totalFood++;
+            }
+
+            if (Utils.VERSION == 2)
+            {
+                currentWorldNode.IncreaseFoodQuantity();
+
+                var nextEdges = GetNextEdges(currentWorldNode);
+
+                var edgesString = new StringBuilder();
+                nextEdges.Select(e => new { e.NodeA, e.NodeB }).ToList().ForEach(e =>
+                {
+                    edgesString.Append($"<({e.NodeA.ToString()}), ({e.NodeB.ToString()})> ");
+                });
+                Console.WriteLine($"[{this.Name} -> {sender}]: move to [{edgesString}]");
+
+                Send(sender, Utils.Serialize("move", nextEdges));
             }
             else
             {
-                if (Utils.VERSION == 2)
-                {
-                    currentWorldNode.IncreaseFoodQuantity();
-
-                    var nextEdges = GetNextEdges(currentWorldNode);
-
-                    var edgesString = new StringBuilder();
-                    nextEdges.Select(e => new { e.NodeA, e.NodeB }).ToList().ForEach(e =>
-                    {
-                        edgesString.Append($"<({e.NodeA.ToString()}), ({e.NodeB.ToString()})> ");
-                    });
-                    Console.WriteLine($"[{this.Name} -> {sender}]: move to [{edgesString}]");
-
-                    Send(sender, Utils.Serialize("move", nextEdges));
-                }
-                else
-                {
-                    HandlePosition(sender, position);
-                }
+                HandlePosition(sender, position);
             }
         }
     }

@@ -23,9 +23,9 @@ namespace AntColony
 
         public void DecreaseWight()
         {
-            if (Weight - 0.2 > 0)
+            if (Weight - Utils.EDGE_DECREASE > 0)
             {
-                Weight -= 0.2;
+                Weight -= Utils.EDGE_DECREASE;
             }
             else
             {
