@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -17,15 +18,18 @@ namespace AntColony
 
         private int _totalFood;
 
+        private Stopwatch _stopwatch;
+
         public World World { get; set; }
         public Dictionary<string, string> Loads { get; set; }
 
-        public WorldAgent(World world, string name)
+        public WorldAgent(World world, string name, Stopwatch stopwatch)
         {
             Name = name;
             World = world;
             Loads = new Dictionary<string, string>();
 
+            _stopwatch = stopwatch;
             _formGui = new AntWorldForm();
             new Thread(GuiThread).Start();
         }
@@ -150,7 +154,10 @@ namespace AntColony
             var nodeEdges = World.Graph[currentWorldNode];
 
             currentWorldNode.DecreaseFoodQuantity();
-            _totalFood++;
+            if (node.Position.X != Utils.WORLD_WIDTH && node.Position.Y != Utils.WORLD_HEIGHT)
+            {
+                _totalFood++;
+            }
 
             World.Graph.Remove(currentWorldNode);
             World.Graph.Add(currentWorldNode, nodeEdges);
@@ -181,25 +188,41 @@ namespace AntColony
 
         private void HandleUnload(string sender, string position)
         {
-            if(Utils.VERSION == 2)
+            var node = new Node
             {
-                var node = new Node
-                {
-                    Position = JsonConvert.DeserializeObject<Point>(position)
-                };
+                Position = JsonConvert.DeserializeObject<Point>(position)
+            };
 
-                var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
-                currentWorldNode.IncreaseFoodQuantity();
-            }
+            var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
 
             if (_totalFood == World.TotalFood)
             {
                 Console.WriteLine($"[{this.Name}]: STOP");
                 this.Stop();
+                _stopwatch.Stop();
+                Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
             }
             else
             {
-                HandlePosition(sender, position);
+                if (Utils.VERSION == 2)
+                {
+                    currentWorldNode.IncreaseFoodQuantity();
+
+                    var nextEdges = GetNextEdges(currentWorldNode);
+
+                    var edgesString = new StringBuilder();
+                    nextEdges.Select(e => new { e.NodeA, e.NodeB }).ToList().ForEach(e =>
+                    {
+                        edgesString.Append($"<({e.NodeA.ToString()}), ({e.NodeB.ToString()})> ");
+                    });
+                    Console.WriteLine($"[{this.Name} -> {sender}]: move to [{edgesString}]");
+
+                    Send(sender, Utils.Serialize("move", nextEdges));
+                }
+                else
+                {
+                    HandlePosition(sender, position);
+                }
             }
         }
     }

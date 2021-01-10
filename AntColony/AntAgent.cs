@@ -94,13 +94,16 @@ namespace AntColony
                     .NodeB;
             }
             else
-            {
+            {             
                 var nextFrontEdges = nextEdges.Where(edge => !edge.NodeB.Equals(_route.Peek()))
                     .ToList();
+                var edgesToFood = nextFrontEdges.Where(edge => edge.NodeB.HasFood).ToList();
 
-                nextNode = nextFrontEdges.Any()
-                    ? nextFrontEdges[nextFrontEdges.Count - 1].NodeB
-                    : _route.Pop();
+                nextNode = edgesToFood.Any()
+                    ? edgesToFood[edgesToFood.Count - 1].NodeB
+                    : (nextFrontEdges.Any()
+                        ? nextFrontEdges[nextFrontEdges.Count - 1].NodeB
+                        : _route.Pop());
             }
 
             if (nextNode != null)

@@ -9,7 +9,7 @@ namespace AntColony
     {
         public static readonly Random RandNoGen = new Random();
 
-        public static int VERSION = 1;
+        public static int VERSION = 2;
 
         /// SIZES
         public const int MIN_DISTANCE_BETWEEN_NODES = 20;
@@ -29,7 +29,7 @@ namespace AntColony
         /// COLORS
         public static Color BACKGROUND_COLOR = Color.White;
 
-        public static Brush EMPTY_ANT_BRUSH = Brushes.Blue;
+        public static Brush EMPTY_ANT_BRUSH = Brushes.Orange;
         public static Brush FOOD_ANT_BRUSH = Brushes.DarkBlue;
         public static Brush EMPTY_NODE_BRUSH = Brushes.Black;
         public static Brush FOOD_NODE_BRUSH = Brushes.YellowGreen;
@@ -38,10 +38,10 @@ namespace AntColony
         public static float[] PATH_WIDTH = {1F, 2F, 5F};
 
         /// OTHER
-        public const int NODE_COUNT = 20;
+        public const int NODE_COUNT = 5;
 
         public const int EDGE_PER_NODE_COUNT = 3;
-        public const int ANT_COUNT = 5;
+        public const int ANT_COUNT = 1;
         public const int FOOD_RATIO = 50;
         public const int FOOD_QUANTITY = 3;
         public const int DELAY = 1000;

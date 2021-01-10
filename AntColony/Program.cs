@@ -1,4 +1,6 @@
 ﻿using ActressMas;
+using System;
+using System.Diagnostics;
 
 namespace AntColony
 {
@@ -6,9 +8,13 @@ namespace AntColony
     {
         private static void Main(string[] args)
         {
+            
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var env = new TurnBasedEnvironment(0, Utils.DELAY);
             var world = new World();
-            var worldAgent = new WorldAgent(world, "worldAgent");
+            var worldAgent = new WorldAgent(world, "worldAgent", stopwatch);
 
             env.Add(worldAgent);
 
