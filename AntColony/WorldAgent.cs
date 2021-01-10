@@ -1,11 +1,12 @@
 ﻿using ActressMas;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 using Message = ActressMas.Message;
 
 namespace AntColony
@@ -13,6 +14,8 @@ namespace AntColony
     public class WorldAgent : TurnBasedAgent
     {
         private readonly AntWorldForm _formGui;
+
+        private int _totalFood;
 
         public World World { get; set; }
         public Dictionary<string, string> Loads { get; set; }
@@ -37,14 +40,48 @@ namespace AntColony
         public override void Setup()
         {
             Console.WriteLine(@"Starting " + Name);
-        } 
+
+            var edges = GetGraphEdges();
+
+            new Thread(() =>
+            {
+                DecreaseWeights(World.Graph.Values.SelectMany(e => e).ToList());
+            }).Start();
+        }
+
+        private void DecreaseWeights(List<Edge> edges)
+        {
+            while (true)
+            {
+                Thread.Sleep(2000);
+
+                edges.ForEach(edge =>
+                {
+                    edge.DecreaseWight();
+                });
+            }
+        }
+
+        private List<Edge> GetGraphEdges()
+        {
+            var edges = new List<Edge>();
+
+            foreach (var edge in World.Graph.Values.SelectMany(e => e))
+            {
+                if (!edges.Any(e => e.Equals(edge)))
+                {
+                    edges.Add(edge);
+                }
+            }
+
+            return edges;
+        }
 
         public override void Act(Queue<Message> messages)
         {
             while (messages.Count > 0)
             {
                 var message = messages.Dequeue();
-                Console.WriteLine($"[{message.Sender} -> {this.Name}]: {message.Content}");
 
                 Utils.ParseMessage(message.Content, out var action, out string parameters);
 
@@ -77,12 +114,20 @@ namespace AntColony
 
             if (currentWorldNode != null && currentWorldNode.HasFood)
             {
+                Console.WriteLine($"[{this.Name} -> {sender}]: pick-up");
                 Send(sender, "pick-up");
             }
             else
             {
-                //TODO Decrease weight if is >0 evrey 3 edge move
                 var nextEdges = GetNextEdges(currentWorldNode);
+
+                var edgesString = new StringBuilder();
+                nextEdges.Select(e => new { e.NodeA, e.NodeB }).ToList().ForEach(e =>
+                {
+                    edgesString.Append($"<({e.NodeA.ToString()}), ({e.NodeB.ToString()})> ");
+                });
+                Console.WriteLine($"[{this.Name} -> {sender}]: move to [{edgesString}]");
+
                 Send(sender, Utils.Serialize("move", nextEdges));
             }
         }
@@ -105,10 +150,12 @@ namespace AntColony
             var nodeEdges = World.Graph[currentWorldNode];
 
             currentWorldNode.DecreaseFoodQuantity();
+            _totalFood++;
 
             World.Graph.Remove(currentWorldNode);
             World.Graph.Add(currentWorldNode, nodeEdges);
 
+            Console.WriteLine($"[{this.Name} -> {sender}]: return");
             Send(sender, "return");
         }
 
@@ -117,21 +164,43 @@ namespace AntColony
             var deserializedEdge = JsonConvert.DeserializeObject<Edge>(edge);
 
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(node => node.Equals(deserializedEdge.NodeA));
-            foreach (var worldEdge in World.Graph[currentWorldNode])
+            foreach (var nodeEdges in World.Graph.Values)
             {
-                if (worldEdge.NodeB.Equals(deserializedEdge.NodeB))
+                foreach (var nodeEdge in nodeEdges)
                 {
-                    worldEdge.IncreaseWeight();
+                    if (nodeEdge.Equals(deserializedEdge))
+                    {
+                        nodeEdge.IncreaseWeight();
+                    }
                 }
             }
 
+            Console.WriteLine($"[{this.Name} -> {sender}]: return");
             Send(sender, "return");
         }
 
         private void HandleUnload(string sender, string position)
         {
-            //TODO Check food quantity and stop if all food is at base
-            HandlePosition(sender, position);
+            if(Utils.VERSION == 2)
+            {
+                var node = new Node
+                {
+                    Position = JsonConvert.DeserializeObject<Point>(position)
+                };
+
+                var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
+                currentWorldNode.IncreaseFoodQuantity();
+            }
+
+            if (_totalFood == World.TotalFood)
+            {
+                Console.WriteLine($"[{this.Name}]: STOP");
+                this.Stop();
+            }
+            else
+            {
+                HandlePosition(sender, position);
+            }
         }
     }
 }

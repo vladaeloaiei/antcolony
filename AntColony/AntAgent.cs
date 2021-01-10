@@ -12,6 +12,10 @@ namespace AntColony
         private Ant _ant;
         private readonly Stack<Node> _route;
 
+        //Version 2
+        private int _nodesToMiddle;
+        private int _walkedNodes;
+
         public AntAgent(string name)
         {
             Name = name;
@@ -52,8 +56,6 @@ namespace AntColony
             {
                 var message = messages.Dequeue();
 
-                Console.WriteLine($"{"",7}[{message.Sender} -> {this.Name}]: {message.Content}");
-
                 Utils.ParseMessage(message.Content, out var action, out string parameters);
 
                 switch (action)
@@ -75,24 +77,44 @@ namespace AntColony
         {
             var nextEdges = JsonConvert.DeserializeObject<IList<Edge>>(edges);
 
-            var maxWeight = nextEdges.Where(edge => !_route.Peek().Equals(edge.NodeB))
-                .Select(edge => edge.Weight)
-                .Max();
+            Node currentNode = null;
+            if (_route.Count > 1)
+            {
+                currentNode = _route.Pop();
+            }
 
-            //TODO Refactor this
-            var nextNode = nextEdges.Select(edge => edge.Weight).Distinct().Count() == 1
-                ? nextEdges[Utils.RandNoGen.Next(Utils.EDGE_PER_NODE_COUNT)].NodeB
-                : nextEdges.First(edge => edge.Weight.Equals(maxWeight))?.NodeB;
+            var weights = nextEdges.Where(edge => edge.Weight > 0)
+                .Select(edge => edge.Weight);
 
-            //var nextNode = maxWeight != 0
-            //    ? nextEdges.First(edge => edge.Weight.Equals(maxWeight))?.NodeB
-            //    : _route.Pop();
+            Node nextNode = null;
+            if (weights.Any())
+            {
+                nextNode = nextEdges.Where(edge => weights.Any(w => edge.Weight.Equals(w)))
+                    .ToList()[Utils.RandNoGen.Next(weights.Count() - 1)]
+                    .NodeB;
+            }
+            else
+            {
+                var nextFrontEdges = nextEdges.Where(edge => !edge.NodeB.Equals(_route.Peek()))
+                    .ToList();
+
+                nextNode = nextFrontEdges.Any()
+                    ? nextFrontEdges[nextFrontEdges.Count - 1].NodeB
+                    : _route.Pop();
+            }
 
             if (nextNode != null)
             {
                 _ant.CurrentNode.Position = nextNode.Position;
-                _route.Push(nextNode);
 
+                if (currentNode != null)
+                {
+                    _route.Push(GetNewNode(currentNode));
+                }
+
+                _route.Push(GetNewNode(nextNode));
+
+                Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: position [{nextNode.ToString()}]");
                 Send(sender, Utils.Serialize("position", nextNode.Position));
             }
         }
@@ -100,48 +122,92 @@ namespace AntColony
         private void PickUpFood(string sender)
         {
             _ant.State = Ant.AntState.Carrying;
-            Send(sender, Utils.Serialize("pick-up", _ant.CurrentNode.Position));
 
+            if (Utils.VERSION == 2)
+            {
+                _nodesToMiddle = _route.Count > 1 ? _route.Count / 2 : 1;
+            }
+
+            Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: pick-up from [{_ant.CurrentNode.ToString()}]");
+            Send(sender, Utils.Serialize("pick-up", _ant.CurrentNode.Position));
         }
 
         private void MoveToBase(string sender)
         {
-            if (Utils.VERSION == 1)
+            switch (Utils.VERSION)
             {
-                if (!IsAtBase())
-                {
-                    Send(sender, Utils.Serialize("carry", new Edge(
-                        new Node { Position = _ant.CurrentNode.Position },
-                        new Node { Position = _route.Peek().Position })
-                ));
-
-                    if (_route.Peek().Position.X == Utils.WORLD_WIDTH / 2 &&
-                        _route.Peek().Position.Y == Utils.WORLD_HEIGHT / 2)
+                case 1:
+                    if (!IsAtBase())
                     {
-                        _ant.CurrentNode.Position = _route.Peek().Position;
+                        CarryFood(sender);
                     }
                     else
                     {
-                        _ant.CurrentNode.Position = _route.Pop().Position;
+                        UnloadFood(sender);
                     }
-                }
-                else
-                {
-                    _ant.State = Ant.AntState.Free;
+                    break;
 
-                    Send(sender, Utils.Serialize("unload", _ant.CurrentNode.Position));
-                }
+                case 2:
+
+                    if (!IsAtMiddle())
+                    {
+                        CarryFood(sender);
+                        _walkedNodes++;
+                    }
+                    else
+                    {
+                        UnloadFood(sender);
+                        _walkedNodes = 0;
+                    }
+                    break;
             }
-            else
-            {
-                //TODO version 2 logic
-            }
+        }
+
+        private void CarryFood(string sender)
+        {
+            if (_route.Count > 1) _route.Pop(); // first element in stack is the current position
+            var nextNodeToReturn = _route.Peek();
+
+            Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: carry");
+            Send(sender, Utils.Serialize("carry", new Edge(
+                 new Node { Position = _ant.CurrentNode.Position },
+                 new Node { Position = nextNodeToReturn.Position }))
+                );
+
+            _ant.CurrentNode.Position = nextNodeToReturn.Position;
+        }
+
+        private void UnloadFood(string sender)
+        {
+            _ant.State = Ant.AntState.Free;
+            _route.Clear();
+            _route.Push(GetNewNode(_ant.CurrentNode));
+
+            Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: unload to [{_ant.CurrentNode.ToString()}]");
+            Send(sender, Utils.Serialize("unload", _ant.CurrentNode.Position));
         }
 
         private bool IsAtBase()
         {
             return (_ant.CurrentNode.Position.Y == Utils.WORLD_WIDTH / 2 &&
                     _ant.CurrentNode.Position.Y == Utils.WORLD_HEIGHT / 2);
+        }
+
+        private bool IsAtMiddle()
+        {
+            return _walkedNodes >= _nodesToMiddle;
+        }
+
+        private Node GetNewNode(Node node)
+        {
+            return new Node
+            {
+                Position = new Point
+                {
+                    X = node.Position.X,
+                    Y = node.Position.Y
+                }
+            };
         }
     }
 }

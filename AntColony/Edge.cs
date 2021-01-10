@@ -8,7 +8,7 @@ namespace AntColony
         public Node NodeA { get; set; }
         public Node NodeB { get; set; }
 
-        public int Weight = 1;
+        public double Weight = 0;
 
         public Edge(Node a, Node b)
         {
@@ -23,9 +23,13 @@ namespace AntColony
 
         public void DecreaseWight()
         {
-            if (Weight > 0)
+            if (Weight - 0.2 > 0)
             {
-                --Weight;
+                Weight -= 0.2;
+            }
+            else
+            {
+                Weight = 0;
             }
         }
 
@@ -36,10 +40,19 @@ namespace AntColony
 
         protected Pen GetPen()
         {
+            if (Weight > 1)
+                return new Pen(Utils.PATH_BRUSH[1], Utils.PATH_WIDTH[1]);
             if (Weight > 2)
                 return new Pen(Utils.PATH_BRUSH[2], Utils.PATH_WIDTH[2]);
             else
                 return new Pen(Utils.PATH_BRUSH[0], Utils.PATH_WIDTH[0]);
+        }
+
+        public new bool Equals(object edge)
+        {
+            var edgeObj = (Edge)edge;
+
+            return (NodeA .Equals(edgeObj.NodeA) && NodeB.Equals(edgeObj.NodeB)) || (NodeA.Equals(edgeObj.NodeB) && NodeB.Equals(edgeObj.NodeA));
         }
     }
 }

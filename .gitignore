@@ -5,6 +5,9 @@
 #JetBrains
 .idea
 
+#VS packages
+packages/*
+
 #Visual Studio Files
 [Oo]bj
 [Bb]in

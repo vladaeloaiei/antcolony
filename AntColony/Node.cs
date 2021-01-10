@@ -23,6 +23,21 @@ namespace AntColony
             }
         }
 
+        public void IncreaseFoodQuantity()
+        {
+            if(Position.X == Utils.WORLD_WIDTH / 2 && Position.Y == Utils.WORLD_HEIGHT / 2)
+            {
+                return;
+            }
+
+            if (!HasFood)
+            {
+                HasFood = true;
+            }
+
+            ++FoodQuantity;
+        }
+
         public virtual void Draw(Graphics g)
         {
             g.FillEllipse(GetBrush(), Position.X - Utils.NODE_WIDTH / 2, Position.Y - Utils.NODE_HEIGHT / 2,
@@ -34,9 +49,15 @@ namespace AntColony
             return HasFood ? Utils.FOOD_NODE_BRUSH : Utils.EMPTY_NODE_BRUSH;
         }
 
-        public bool Equals(Node other)
+        public new bool Equals(object other)
         {
-            return (Position.X == other.Position.X) && (Position.Y == other.Position.Y);
+            var node = (Node)other;
+            return (Position.X == node.Position.X) && (Position.Y == node.Position.Y);
+        }
+
+        public new string ToString()
+        {
+            return $"{this.Position.X} {this.Position.Y}";
         }
     }
 }

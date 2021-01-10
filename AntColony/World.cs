@@ -11,6 +11,8 @@ namespace AntColony
         public AntHill AntHill { get; set; }
         public IDictionary<string, Ant> Ants { get; set; }
 
+        public int TotalFood;
+
         public World()
         {
             Ants = new Dictionary<string, Ant>();
@@ -62,6 +64,11 @@ namespace AntColony
 
             node.HasFood = Utils.RandomBool(Utils.FOOD_RATIO);
             node.FoodQuantity = node.HasFood ? Utils.FOOD_QUANTITY : 0;
+
+            if(node.HasFood)
+            {
+                TotalFood += Utils.FOOD_QUANTITY;
+            }
 
             return node;
         }
