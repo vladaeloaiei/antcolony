@@ -69,15 +69,49 @@ namespace AntColony
                     case "return":
                         MoveToBase(message.Sender);
                         break;
+                    case "stop":
+                        Console.WriteLine($"{"",7}[{this.Name}]: Stop");
+                        this.Stop();
+                        break;
                 }
             }
         }
 
         private void ChangePosition(string sender, string edges)
         {
+            Node currentNode = null;
+
+            if ((Utils.VERSION == 2) && (_route.Count > (2 + Utils.NODE_COUNT / Utils.EDGE_PER_NODE_COUNT)))
+            {
+                _route.Clear();
+                _walkedNodes = 0;
+                _nodesToMiddle = 0;
+
+                _ant.CurrentNode = new Node
+                {
+                    Position = new Point
+                    {
+                        X = Utils.WORLD_WIDTH / 2,
+                        Y = Utils.WORLD_HEIGHT / 2
+                    }
+                };
+
+                _route.Push(new Node
+                {
+                    Position = new Point
+                    {
+                        X = Utils.WORLD_WIDTH / 2,
+                        Y = Utils.WORLD_HEIGHT / 2
+                    }
+                });
+
+                Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: position [{_ant.CurrentNode.ToString()}]");
+                Send(sender, Utils.Serialize("position", _ant.CurrentNode.Position));
+                return;
+            }
+
             var nextEdges = JsonConvert.DeserializeObject<IList<Edge>>(edges);
 
-            Node currentNode = null;
             if (_route.Count > 1)
             {
                 currentNode = _route.Pop();
@@ -94,15 +128,15 @@ namespace AntColony
                     .NodeB;
             }
             else
-            {             
+            {
                 var nextFrontEdges = nextEdges.Where(edge => !edge.NodeB.Equals(_route.Peek()))
                     .ToList();
                 var edgesToFood = nextFrontEdges.Where(edge => edge.NodeB.HasFood).ToList();
 
                 nextNode = edgesToFood.Any()
-                    ? edgesToFood[edgesToFood.Count - 1].NodeB
+                    ? edgesToFood[Utils.RandNoGen.Next(edgesToFood.Count - 1)].NodeB
                     : (nextFrontEdges.Any()
-                        ? nextFrontEdges[nextFrontEdges.Count - 1].NodeB
+                        ? nextFrontEdges[Utils.RandNoGen.Next(nextFrontEdges.Count - 1)].NodeB
                         : _route.Pop());
             }
 
@@ -148,6 +182,7 @@ namespace AntColony
                     {
                         UnloadFood(sender);
                     }
+
                     break;
 
                 case 2:
@@ -162,6 +197,7 @@ namespace AntColony
                         UnloadFood(sender);
                         _walkedNodes = 0;
                     }
+
                     break;
             }
         }
@@ -173,9 +209,9 @@ namespace AntColony
 
             Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: carry");
             Send(sender, Utils.Serialize("carry", new Edge(
-                 new Node { Position = _ant.CurrentNode.Position },
-                 new Node { Position = nextNodeToReturn.Position }))
-                );
+                new Node {Position = _ant.CurrentNode.Position},
+                new Node {Position = nextNodeToReturn.Position}))
+            );
 
             _ant.CurrentNode.Position = nextNodeToReturn.Position;
         }

@@ -11,7 +11,7 @@ namespace AntColony
         public AntHill AntHill { get; set; }
         public IDictionary<string, Ant> Ants { get; set; }
 
-        public int TotalFood;
+        public int TotalFood = 0;
 
         public World()
         {

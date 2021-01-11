@@ -57,7 +57,7 @@ namespace AntColony
         {
             while (true)
             {
-                Thread.Sleep(2000);
+                Thread.Sleep(Utils.DECREMENT_DELAY);
 
                 edges.ForEach(edge =>
                 {
@@ -89,6 +89,18 @@ namespace AntColony
 
                 Utils.ParseMessage(message.Content, out var action, out string parameters);
 
+                _formGui.UpdateWorldGui();
+
+                if (_totalFood == World.TotalFood)
+                {
+                    Console.WriteLine($"[{this.Name}]: STOP");
+                    this.Stop();
+                    _stopwatch.Stop();
+                    Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
+                    Broadcast( "stop");
+                    return;
+                }
+                
                 switch (action)
                 {
                     case "position":
@@ -104,16 +116,6 @@ namespace AntColony
                         HandleUnload(message.Sender, parameters);
                         break;
                 }
-
-                _formGui.UpdateWorldGui();
-
-                if (_totalFood == World.TotalFood)
-                {
-                    Console.WriteLine($"[{this.Name}]: STOP");
-                    this.Stop();
-                    _stopwatch.Stop();
-                    Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
-                }
             }
         }
 
@@ -126,6 +128,7 @@ namespace AntColony
 
             if (currentWorldNode != null && currentWorldNode.HasFood)
             {
+                currentWorldNode.DecreaseFoodQuantity();
                 Console.WriteLine($"[{this.Name} -> {sender}]: pick-up");
                 Send(sender, "pick-up");
             }
@@ -160,8 +163,6 @@ namespace AntColony
 
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
             var nodeEdges = World.Graph[currentWorldNode];
-
-            currentWorldNode.DecreaseFoodQuantity();
 
             World.Graph.Remove(currentWorldNode);
             World.Graph.Add(currentWorldNode, nodeEdges);

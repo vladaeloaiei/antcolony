@@ -9,7 +9,7 @@ namespace AntColony
     {
         public static readonly Random RandNoGen = new Random();
 
-        public static int VERSION = 2;
+        public static int VERSION = 1;
 
         /// SIZES
         public const int MIN_DISTANCE_BETWEEN_NODES = 20;
@@ -38,14 +38,15 @@ namespace AntColony
         public static float[] PATH_WIDTH = {1F, 2F, 5F};
 
         /// OTHER
-        public const int NODE_COUNT = 5;
+        public const int NODE_COUNT = 15;
 
         public const int EDGE_PER_NODE_COUNT = 3;
-        public const double EDGE_DECREASE = 0.3;
-        public const int ANT_COUNT = 1;
-        public const int FOOD_RATIO = 20;
-        public const int FOOD_QUANTITY = 3;
-        public const int DELAY = 1000;
+        public const double EDGE_DECREASE = 1;
+        public const int ANT_COUNT = 10;
+        public const int FOOD_RATIO = 30;
+        public const int FOOD_QUANTITY = 1;
+        public const int DELAY = 200;
+        public const int DECREMENT_DELAY = 200;
 
         public static void ParseMessage(string content, out string action, out List<string> parameters)
         {
@@ -60,7 +61,7 @@ namespace AntColony
 
         public static void ParseMessage(string content, out string action, out string parameters)
         {
-            var t = content.Split(new[] { ' ' }, 2);
+            var t = content.Split(new[] {' '}, 2);
 
             action = t[0];
             parameters = t.Length == 2 ? t[1] : string.Empty;
