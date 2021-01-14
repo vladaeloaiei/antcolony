@@ -21,7 +21,11 @@ namespace AntColony
 
         public void Draw(Graphics g)
         {
-            g.FillEllipse(GetBrush(), CurrentNode.Position.X, CurrentNode.Position.Y, Utils.ANT_WIDTH, Utils.ANT_HEIGHT);
+            int pozX, pozY;
+            pozX = (State == AntState.Carrying) ? CurrentNode.Position.X - Utils.ANT_WIDTH : CurrentNode.Position.X;
+            pozY = (State == AntState.Carrying) ? CurrentNode.Position.Y - Utils.ANT_HEIGHT : CurrentNode.Position.Y;
+
+            g.FillEllipse(GetBrush(), pozX, pozY, Utils.ANT_WIDTH, Utils.ANT_HEIGHT);
         }
 
 

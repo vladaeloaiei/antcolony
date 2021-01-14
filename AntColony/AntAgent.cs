@@ -81,34 +81,34 @@ namespace AntColony
         {
             Node currentNode = null;
 
-            if ((Utils.VERSION == 2) && (_route.Count > (2 + Utils.NODE_COUNT / Utils.EDGE_PER_NODE_COUNT)))
-            {
-                _route.Clear();
-                _walkedNodes = 0;
-                _nodesToMiddle = 0;
+            //if ((Utils.VERSION == 2) && (_route.Count > (2 + Utils.NODE_COUNT / Utils.EDGE_PER_NODE_COUNT)))
+            //{
+            //    _route.Clear();
+            //    _walkedNodes = 0;
+            //    _nodesToMiddle = 0;
 
-                _ant.CurrentNode = new Node
-                {
-                    Position = new Point
-                    {
-                        X = Utils.WORLD_WIDTH / 2,
-                        Y = Utils.WORLD_HEIGHT / 2
-                    }
-                };
+            //    _ant.CurrentNode = new Node
+            //    {
+            //        Position = new Point
+            //        {
+            //            X = Utils.WORLD_WIDTH / 2,
+            //            Y = Utils.WORLD_HEIGHT / 2
+            //        }
+            //    };
 
-                _route.Push(new Node
-                {
-                    Position = new Point
-                    {
-                        X = Utils.WORLD_WIDTH / 2,
-                        Y = Utils.WORLD_HEIGHT / 2
-                    }
-                });
+            //    _route.Push(new Node
+            //    {
+            //        Position = new Point
+            //        {
+            //            X = Utils.WORLD_WIDTH / 2,
+            //            Y = Utils.WORLD_HEIGHT / 2
+            //        }
+            //    });
 
-                Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: position [{_ant.CurrentNode.ToString()}]");
-                Send(sender, Utils.Serialize("position", _ant.CurrentNode.Position));
-                return;
-            }
+            //    Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: position [{_ant.CurrentNode.ToString()}]");
+            //    Send(sender, Utils.Serialize("position", _ant.CurrentNode.Position));
+            //    return;
+            //}
 
             var nextEdges = JsonConvert.DeserializeObject<IList<Edge>>(edges);
 
@@ -187,7 +187,12 @@ namespace AntColony
 
                 case 2:
 
-                    if (!IsAtMiddle())
+                    if (IsAtBase())
+                    {
+                        UnloadFood(sender);
+                        _walkedNodes = 0;
+
+                    }else if (!IsAtMiddle())
                     {
                         CarryFood(sender);
                         _walkedNodes++;
@@ -219,9 +224,16 @@ namespace AntColony
         private void UnloadFood(string sender)
         {
             _ant.State = Ant.AntState.Free;
-            _route.Clear();
-            _route.Push(GetNewNode(_ant.CurrentNode));
-
+            if (Utils.VERSION == 1)
+            {
+                _route.Clear();
+                _route.Push(GetNewNode(_ant.CurrentNode));
+            }
+            if((Utils.VERSION == 2) && (IsAtBase()))
+            {
+                _route.Clear();
+                _route.Push(GetNewNode(_ant.CurrentNode));
+            }
             Console.WriteLine($"{"",7}[{this.Name} -> {sender}]: unload to [{_ant.CurrentNode.ToString()}]");
             Send(sender, Utils.Serialize("unload", _ant.CurrentNode.Position));
         }

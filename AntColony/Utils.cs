@@ -9,13 +9,13 @@ namespace AntColony
     {
         public static readonly Random RandNoGen = new Random();
 
-        public static int VERSION = 1;
+        public static int VERSION = 2;
 
         /// SIZES
         public const int MIN_DISTANCE_BETWEEN_NODES = 20;
 
-        public const int WORLD_HEIGHT = 800;
-        public const int WORLD_WIDTH = 800;
+        public const int WORLD_HEIGHT = 700;
+        public const int WORLD_WIDTH = 700;
 
         public const int NODE_WIDTH = 12;
         public const int NODE_HEIGHT = 12;
@@ -30,7 +30,7 @@ namespace AntColony
         public static Color BACKGROUND_COLOR = Color.White;
 
         public static Brush EMPTY_ANT_BRUSH = Brushes.Orange;
-        public static Brush FOOD_ANT_BRUSH = Brushes.DarkBlue;
+        public static Brush FOOD_ANT_BRUSH = Brushes.Yellow;
         public static Brush EMPTY_NODE_BRUSH = Brushes.Black;
         public static Brush FOOD_NODE_BRUSH = Brushes.YellowGreen;
         public static Brush ANTHILL_BRUSH = Brushes.Red;
@@ -38,13 +38,13 @@ namespace AntColony
         public static float[] PATH_WIDTH = {1F, 2F, 5F};
 
         /// OTHER
-        public const int NODE_COUNT = 15;
+        public const int NODE_COUNT = 25;
 
         public const int EDGE_PER_NODE_COUNT = 3;
         public const double EDGE_DECREASE = 1;
-        public const int ANT_COUNT = 10;
+        public const int ANT_COUNT =12;
         public const int FOOD_RATIO = 30;
-        public const int FOOD_QUANTITY = 1;
+        public const int FOOD_QUANTITY = 5;
         public const int DELAY = 200;
         public const int DECREMENT_DELAY = 200;
 

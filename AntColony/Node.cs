@@ -40,8 +40,12 @@ namespace AntColony
 
         public virtual void Draw(Graphics g)
         {
+            float width, height;
+            width = HasFood ? Utils.NODE_WIDTH + FoodQuantity * 3 : Utils.NODE_WIDTH;
+            height = HasFood ? Utils.NODE_HEIGHT + FoodQuantity * 3 : Utils.NODE_HEIGHT;
+
             g.FillEllipse(GetBrush(), Position.X - Utils.NODE_WIDTH / 2, Position.Y - Utils.NODE_HEIGHT / 2,
-                Utils.NODE_WIDTH, Utils.NODE_HEIGHT);
+                width, height);
         }
 
         protected virtual Brush GetBrush()

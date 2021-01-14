@@ -97,10 +97,10 @@ namespace AntColony
                     this.Stop();
                     _stopwatch.Stop();
                     Console.WriteLine("Time elapsed: {0}", _stopwatch.Elapsed);
-                    Broadcast( "stop");
+                    Broadcast("stop");
                     return;
                 }
-                
+
                 switch (action)
                 {
                     case "position":
@@ -161,6 +161,10 @@ namespace AntColony
                 Position = JsonConvert.DeserializeObject<Point>(position)
             };
 
+            var ant = new Ant(node);
+            ant.State = Ant.AntState.Carrying;
+            World.AddOrUpdateAnt(sender, ant);
+
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
             var nodeEdges = World.Graph[currentWorldNode];
 
@@ -174,6 +178,10 @@ namespace AntColony
         private void HandleCarry(string sender, string edge)
         {
             var deserializedEdge = JsonConvert.DeserializeObject<Edge>(edge);
+
+            var ant = new Ant(new Node { Position = deserializedEdge.NodeA.Position });
+            ant.State = Ant.AntState.Carrying;
+            World.AddOrUpdateAnt(sender, ant);
 
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(node => node.Equals(deserializedEdge.NodeA));
             foreach (var nodeEdges in World.Graph.Values)
@@ -198,6 +206,9 @@ namespace AntColony
                 Position = JsonConvert.DeserializeObject<Point>(position)
             };
 
+            var ant = new Ant(node);
+            World.AddOrUpdateAnt(sender, ant);
+
             var currentWorldNode = World.Graph.Keys.SingleOrDefault(n => n.Equals(node));
 
             if (node.Position.X == Utils.WORLD_WIDTH / 2 && node.Position.Y == Utils.WORLD_HEIGHT / 2)
@@ -205,6 +216,7 @@ namespace AntColony
                 _totalFood++;
             }
 
+            
             if (Utils.VERSION == 2)
             {
                 currentWorldNode.IncreaseFoodQuantity();
